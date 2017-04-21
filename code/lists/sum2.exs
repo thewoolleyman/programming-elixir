@@ -15,3 +15,4 @@ defmodule MyList do
   defp _sum([ head | tail ], total), do: _sum(tail, head+total)
 end
 
+IO.puts MyList.sum([1,2,3])
