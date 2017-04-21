@@ -2,6 +2,13 @@
 
 https://pragprog.com/book/elixir13/programming-elixir-1-3
 
+----
+
+* Provided code samples from book are in `code` dir.
+* Exercises I completed are in `exercises` dir.
+
+----
+
 Bash one-liner to autorun examples (`brew install watch`):
 
 ```bash
