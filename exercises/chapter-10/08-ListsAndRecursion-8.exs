@@ -6,7 +6,7 @@ defmodule Order do
   defp _add_total_amount(order, tax_rates) do
     rate = tax_rates[order[:ship_to]] || 0.0
     tax = order[:net_amount] * rate
-    Keyword.merge(order, [net_amount: order[:net_amount] + tax])
+    Keyword.merge(order, [total_amount: order[:net_amount] + tax])
   end
 end
 
@@ -22,7 +22,7 @@ orders = [
 [ id: 130, ship_to: :NC, net_amount: 50.00 ]
 ]
 
-IO.inspect(107.5 = Enum.at(Order.total(tax_rates, orders),0)[:net_amount])
-IO.inspect(48.384 = Enum.at(Order.total(tax_rates, orders),3)[:net_amount])
+IO.inspect(107.5 = Enum.at(Order.total(tax_rates, orders),0)[:total_amount])
+IO.inspect(48.384 = Enum.at(Order.total(tax_rates, orders),3)[:total_amount])
 
 
