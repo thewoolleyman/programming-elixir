@@ -1,16 +1,18 @@
 defmodule Issues.CLI do
   @default_count 4
 
-  @module_doc """
+  @moduledoc """
   Handle the command line parsing and the dispatch to
   the various functions that end up generating a
   table of the last _n_ issues in a github project
   """
 
   def run(argv) do
-    argv
+    IO.puts("Running...")
+    output = argv
     |> parse_args
     |> process
+    IO.inspect output
   end
 
   @doc """
@@ -41,9 +43,16 @@ defmodule Issues.CLI do
     System.halt(0)
   end
 
-  def process({user, project, _count}) do
+  def process({user, project, count}) do
     Issues.GithubIssues.fetch(user, project)
     |> decode_response
+    |> sort_into_ascending_order
+    |> Enum.take(count)
+  end
+
+  def sort_into_ascending_order(list_of_issues) do
+    Enum.sort list_of_issues,
+      fn i1, i2 -> Map.get(i1, "created_at") <= Map.get(i2, "created_at") end
   end
 
   def decode_response({:ok, body}) do
