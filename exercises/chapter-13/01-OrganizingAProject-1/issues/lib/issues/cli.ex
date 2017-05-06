@@ -7,12 +7,14 @@ defmodule Issues.CLI do
   table of the last _n_ issues in a github project
   """
 
+  def main(argv) do
+    run(argv)
+  end
+
   def run(argv) do
-    IO.puts("Running...")
-    output = argv
+    argv
     |> parse_args
     |> process
-    IO.inspect output
   end
 
   @doc """
