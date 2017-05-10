@@ -9,10 +9,10 @@
 defmodule FibSolver do
 
   def fib(scheduler) do
-    send scheduler, { :ready, self }
+    send scheduler, { :ready, self() }
     receive do
       { :fib, n, client } ->
-        send client, { :answer, n, fib_calc(n), self }
+        send client, { :answer, n, fib_calc(n), self() }
         fib(scheduler)
       { :shutdown } ->
         exit(:normal)
@@ -29,7 +29,7 @@ defmodule Scheduler do
 
   def run(num_processes, module, func, to_calculate) do
     (1..num_processes)
-    |> Enum.map(fn(_) -> spawn(module, func, [self]) end)
+    |> Enum.map(fn(_) -> spawn(module, func, [self()]) end)
     |> schedule_processes(to_calculate, [])
   end
 
@@ -37,7 +37,7 @@ defmodule Scheduler do
     receive do 
       {:ready, pid} when length(queue) > 0 ->
         [ next | tail ] = queue
-        send pid, {:fib, next, self}
+        send pid, {:fib, next, self()}
         schedule_processes(processes, tail, results)
 
       {:ready, pid} ->
