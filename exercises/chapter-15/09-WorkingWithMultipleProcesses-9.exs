@@ -1,4 +1,6 @@
-defmodule CatFinder do
+defmodule WordFinder do
+  @search_word "include"
+
   def find(scheduler) do
     send scheduler, { :ready, self() }
     receive do
@@ -12,27 +14,26 @@ defmodule CatFinder do
 
   defp _find(file) do
     words = File.read!(file) |> String.split()
-    Enum.reduce(words, 0, fn(word, acc) -> acc + cat_word(word) end)
+    Enum.reduce(words, 0, fn(word, acc) -> acc + word_matches?(word) end)
   end
 
-  defp cat_word(word) do
+  defp word_matches?(word) do
     case word do
-      "include" -> 1
-#      "cat" -> 1
+      @search_word -> 1
       _ -> 0
     end
   end
 end
 
 defmodule Scheduler do
-  def run(num_processes, module, func, to_calculate) do
+  def run(num_processes, module, func, queue) do
     (1..num_processes)
     |> Enum.map(fn(_) -> spawn(module, func, [self()]) end)
-    |> schedule_processes(to_calculate, [])
+    |> schedule_processes(queue, [])
   end
 
   defp schedule_processes(processes, queue, results) do
-    receive do 
+    receive do
       {:ready, pid} when length(queue) > 0 ->
         [ next | tail ] = queue
         send pid, {:find, next, self()}
@@ -52,18 +53,35 @@ defmodule Scheduler do
   end
 end
 
+duper = fn(orig_list, number_of_times_to_duplicate) ->
+  Enum.concat(for _ <- 1..number_of_times_to_duplicate do Enum.flat_map(orig_list, &([&1, &1])) end)
+end
+
 files_and_dirs = Path.wildcard("/usr/local/include/**/*")
-files = Enum.reject(files_and_dirs, &(File.dir?(&1)))
 
-Enum.each files, fn file ->
-  {_time, result} = :timer.tc(
-    Scheduler, :run,
-    [1, CatFinder, :find, [file]]
-  )
+unique_files = Enum.reject(files_and_dirs, &(File.dir?(&1)))
+# duplicate list to make performance gains of multiple
+# processes more apparent
+number_of_times_to_dup_list = 1
+# NOTE: Increasing this number eliminates gains from multiple processes - something
+#       about how SSD file IO contention works?
+files = duper.(unique_files, number_of_times_to_dup_list)
 
-  {count, _} = Enum.at(result,0)
+num_processes = Enum.count(files)
+#num_processes = 1  # With unique files, going to 1 processes approximately doubles the runtime
+{time, results} = :timer.tc(
+  Scheduler, :run,
+  [num_processes, WordFinder, :find, files]
+)
 
-  if count > 1 do
+count_display_threshold = 10
+
+Enum.each(results, fn result ->
+  {count, file} = result
+
+  if count > count_display_threshold do
     IO.inspect({count, file})
   end
-end
+end)
+
+IO.inspect("Run time: #{time / 1000 / 1000}")
