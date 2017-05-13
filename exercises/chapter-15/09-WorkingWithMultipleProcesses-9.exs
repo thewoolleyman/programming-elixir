@@ -54,7 +54,7 @@ defmodule Scheduler do
 end
 
 duper = fn(orig_list, number_of_times_to_duplicate) ->
-  Enum.concat(for _ <- 1..number_of_times_to_duplicate do Enum.flat_map(orig_list, &([&1, &1])) end)
+  Stream.cycle(orig_list) |> Enum.take(length(orig_list) * number_of_times_to_duplicate)
 end
 
 files_and_dirs = Path.wildcard("/usr/local/include/**/*")
@@ -62,13 +62,13 @@ files_and_dirs = Path.wildcard("/usr/local/include/**/*")
 unique_files = Enum.reject(files_and_dirs, &(File.dir?(&1)))
 # duplicate list to make performance gains of multiple
 # processes more apparent
-number_of_times_to_dup_list = 1
+number_of_times_to_dup_list = 5
 # NOTE: Increasing this number eliminates gains from multiple processes - something
 #       about how SSD file IO contention works?
 files = duper.(unique_files, number_of_times_to_dup_list)
 
 num_processes = Enum.count(files)
-#num_processes = 1  # With unique files, going to 1 processes approximately doubles the runtime
+#num_processes = 1  # With unique non-dup files, going to 1 processes approximately doubles the runtime
 {time, results} = :timer.tc(
   Scheduler, :run,
   [num_processes, WordFinder, :find, files]
