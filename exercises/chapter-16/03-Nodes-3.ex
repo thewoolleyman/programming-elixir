@@ -15,7 +15,7 @@ defmodule Ticker do
   def generator(clients, unprocessed_clients) do
     receive do
       { :register, pid } ->
-        IO.puts "registering #{inspect pid}"
+        IO.puts "registering new client: #{inspect pid}"
         generator([pid|clients], [pid|unprocessed_clients])
     after
       @interval -> tick(clients, unprocessed_clients)
@@ -23,15 +23,12 @@ defmodule Ticker do
   end
 
   defp tick(clients, unprocessed_clients) do
-    IO.puts("Ticking for clients, unprocessed_clients")
-    IO.inspect(clients)
-    IO.inspect(unprocessed_clients)
     case unprocessed_clients do
       [] ->
+        IO.puts("Ticked for all clients, starting over.")
         generator(clients, clients)
       [next_unprocessed_client|remaining_unprocessed_clients] ->
-        IO.puts "tick for next_unprocessed_client:"
-        IO.inspect(next_unprocessed_client)
+        IO.puts "Tick for next_unprocessed_client: #{inspect(next_unprocessed_client)}"
         send next_unprocessed_client, { :tick }
         generator(clients, remaining_unprocessed_clients)
     end
