@@ -3,8 +3,10 @@ defmodule Stack.Server do
 
   # External API
 
-  def start_link(initial_stack) do
-    GenServer.start_link(__MODULE__, initial_stack, name: __MODULE__)
+  def start_link(stash_pid) do
+    {:ok,_pid} = GenServer.start_link(__MODULE__, stash_pid, name: __MODULE__)
+    :sys.trace(__MODULE__, true)
+    {:ok,_pid}
   end
 
   def pop do
@@ -21,23 +23,24 @@ defmodule Stack.Server do
 
   # GenServer implementation
 
-  def handle_call(:pop, _from, stack) do
-    [head | tail] = stack
-    {:reply, head, tail}
+  def init(stash_pid) do
+    current_stack = Stack.Stash.get_stack stash_pid
+    { :ok, {current_stack, stash_pid} }
   end
 
-  def handle_cast({:push, value}, stack) do
+  def handle_call(:pop, _from, {stack, stash_pid}) do
+    [head | tail] = stack
+    {:reply, head, {tail, stash_pid}}
+  end
+
+  def handle_cast({:push, value}, {stack, stash_pid}) do
     cond do
-      value < 10 -> {:stop, :value_must_be_greater_than_ten, stack}
-      true -> {:noreply, [value | stack ]}
+      value < 10 -> {:stop, :value_must_be_greater_than_ten, {stack, stash_pid}}
+      true -> {:noreply, {[value | stack ], stash_pid}}
     end
   end
 
-  def handle_cast({:stop, reason}, stack) do
-    {:stop, reason, stack}
-  end
-
-  def terminate(reason, stack) do
-    IO.puts("Terminating.  Reason: #{reason}, Stack: #{inspect stack}")
+  def terminate(_reason, {current_stack, stash_pid}) do
+    Stack.Stash.save_stack stash_pid, current_stack
   end
 end
