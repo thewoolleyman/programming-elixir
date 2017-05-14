@@ -4,6 +4,7 @@ defmodule Stack.Server do
   # External API
 
   def start_link(stash_pid) do
+    IO.puts("DEBUG: #{__MODULE__} start_link, stash_pid: #{inspect stash_pid}")
     {:ok,_pid} = GenServer.start_link(__MODULE__, stash_pid, name: __MODULE__)
     :sys.trace(__MODULE__, true)
     {:ok,_pid}
